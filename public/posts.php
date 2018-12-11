@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 
 // Init globals
 $GLOBALS['error'] = "";
+$GLOBALS['warning'] = "";
 $GLOBALS['result'] = array();
 
 // Init variables
@@ -12,22 +13,39 @@ $result['mod_time'] = null;
 $fn = '../bulletin_board_content.dat';
 
 // Some helper functions
-function save_error(){
-    $GLOBALS['result']['error'] = $GLOBALS['error'];
+function _save_problem(){
+    if($GLOBALS['error'] != "")
+        $GLOBALS['result']['error'] = $GLOBALS['error'];
+
+    if($GLOBALS['warning'] != "")
+        $GLOBALS['result']['warning'] = $GLOBALS['warning'];
 }
 
-function detect_errors($request){
-    if(empty($request)){
+function _has_error(){
+    if($GLOBALS['error'] != "")
         return true;
-    }
 
-    save_error();
+    return false;
+}
+
+function _has_warning(){
+    if($GLOBALS['warning'] != "")
+        return true;
+
+    return false;
+}
+
+function _has_problem(){
+    if(_has_error() || _has_warning())
+        return true;
+
     return false;
 }
 
 function empty_error()
 {
-    save_error();
+    if(_has_problem())
+        _save_problem();
 
     if ($GLOBALS['error'] == "")
         return true;
@@ -37,10 +55,15 @@ function empty_error()
 
 function exit_return()
 {
+    if(_has_problem())
+        _save_problem();
+
     return json_encode($GLOBALS['result']);
 }
 
-// Here the main process begins
+/*
+ * Here the main process begins
+ */
 
 // Check if file exists
 if(!file_exists($fn))
@@ -67,12 +90,16 @@ fclose($file);
 // Try to parse data
 $elements = array_filter(explode('<dt>', $messages));
 
-// Look into each element of file an validate and save
+// Look into each element of file to validate and save
 foreach ($elements as $element){
     $message = array();
     $user_and_message = array_filter(explode('<strong>', $element));
 
-    preg_match('#((https?|ftp)://(\S*?\.\S*?))([\s)\[\]{},;"\':<]|\.\s|$)#i', $user_and_message[0], $image);
+    preg_match(
+        '#((https?|ftp)://(\S*?\.\S*?))([\s)\[\]{},;"\':<]|\.\s|$)#i',
+        $user_and_message[0],
+        $image
+    );
 
     if(!empty($image))
         $message['user_image'] = $image[0];
@@ -94,8 +121,13 @@ foreach ($elements as $element){
         exit(exit_return());
     }
 
-    $GLOBALS['result']['messages'] = $message;
+    $GLOBALS['result']['messages'][] = $message;
+}
+
+if( empty($GLOBALS['result']['messages'])){
+    $GLOBALS['warning'] = 'No messages found!';
+    exit(exit_return());
 }
 
 // If everything went fine output the result
-echo json_encode(array_reverse ($result));
+echo exit_return();
