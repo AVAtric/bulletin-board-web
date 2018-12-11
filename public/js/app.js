@@ -30827,12 +30827,25 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     data: function data() {
         return {
             loading_messages: true,
-            messages: [],
             mod_time: null,
-            error: ""
+            messages: [],
+            error: "",
+            warning: ""
         };
     },
 
+
+    computed: {
+        has_error: function has_error() {
+            return this.error !== "";
+        },
+        has_warning: function has_warning() {
+            return this.warning !== "";
+        },
+        is_loading: function is_loading() {
+            return this.error === "" && this.warning === "" && this.loading_messages === true;
+        }
+    },
 
     timers: {
         check_file: { time: 3000, autostart: true, repeat: true }
@@ -30845,76 +30858,51 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     },
 
     methods: {
+        clear_problems: function clear_problems() {
+            this.error = "";
+            this.warning = "";
+        },
+        has_problem: function has_problem() {
+            return this.error !== "" || this.warning !== "";
+        },
         check_file: function check_file() {
-            var _this = this;
-
             var self = this;
 
             axios.get(window.location.href + 'posts.php?t').then(function (response) {
-                return _this.mod_time = self.validate_request(response, "check");
+                return self.mod_time = self.validate_request(response, "check");
+            }).catch(function (error) {
+                return self.error = error.reason;
             });
         },
         get_messages: function get_messages() {
-            var _this2 = this;
-
-            if (this.error !== "File not found!") this.loading_messages = true;
-
-            this.error = "";
+            if (this.messages.length === 0) this.loading_messages = true;
 
             var self = this;
 
             axios.get(window.location.href + 'posts.php').then(function (response) {
-                return _this2.messages = self.validate_request(response, "message");
+                return self.messages = self.validate_request(response, "message");
+            }).catch(function (error) {
+                return self.error = error.reason;
             });
         },
         validate_request: function validate_request(response, type) {
-            var self = this;
+            if (response.data.hasOwnProperty('error')) this.error = response.data.error;
+
+            if (response.data.hasOwnProperty('warning')) this.error = response.data.warning;
 
             switch (type) {
                 case "check":
-                    if (!this.has_data(response)) return null;
+                    if (this.has_problem()) return null;
 
-                    if (this.has_error(response.data)) return null;
-
-                    this.loading_messages = false;
-
-                    if (response.data.hasOwnProperty('mod_time')) return response.data.mod_time;
-
-                    this.error = "File mod date not available!";
-
-                    return null;
+                    return response.data.mod_time;
                 case "message":
-                    if (!this.has_data(response)) return [];
-
-                    if (this.has_error(response.data)) return [];
-
-                    response.data.forEach(function (element) {
-                        if (element.user === "" || element.message === "") self.error = "Data corrupted!";
-                    });
-
                     this.loading_messages = false;
+                    this.clear_problems();
 
-                    if (this.error !== '') return [];
+                    if (this.has_problem()) return [];
 
-                    return response.data;
+                    return response.data.messages;
             }
-        },
-        has_data: function has_data(response) {
-            if (!response.hasOwnProperty('data')) {
-                this.error = "Error in response!";
-                return false;
-            }
-
-            return true;
-        },
-        has_error: function has_error(data) {
-            if (data.hasOwnProperty('error')) {
-                this.messages = [];
-                this.error = data.error;
-                return true;
-            }
-
-            return false;
         }
     },
 
@@ -31054,19 +31042,19 @@ var render = function() {
     "div",
     { staticClass: "container has-text-centered" },
     [
-      this.loading_messages
+      _vm.is_loading
         ? _c("div", { staticClass: "notification" }, [
             _vm._v("\n        Messages are loading!\n    ")
           ])
         : _vm._e(),
       _vm._v(" "),
-      _vm.messages.length === 0 && _vm.error === "" && !this.loading_messages
+      _vm.has_warning
         ? _c("div", { staticClass: "notification is-warning" }, [
-            _vm._v("\n        No messages found!\n    ")
+            _vm._v("\n        " + _vm._s(_vm.warning) + "\n    ")
           ])
         : _vm._e(),
       _vm._v(" "),
-      _vm.error !== ""
+      _vm.has_error
         ? _c("div", { staticClass: "notification is-danger" }, [
             _vm._v("\n        " + _vm._s(_vm.error) + "\n    ")
           ])

@@ -42,19 +42,16 @@ function _has_problem(){
     return false;
 }
 
-function empty_error()
-{
-    if(_has_problem())
+function empty_problem(){
+    if(_has_problem()){
         _save_problem();
+        return false;
+    }
 
-    if ($GLOBALS['error'] == "")
-        return true;
-
-    return false;
+    return true;
 }
 
-function exit_return()
-{
+function exit_return(){
     if(_has_problem())
         _save_problem();
 
@@ -69,7 +66,7 @@ function exit_return()
 if(!file_exists($fn))
     $GLOBALS['error'] = 'File not found!';
 
-if(!empty_error())
+if(!empty_problem())
     exit(exit_return());
 
 // Save modification time of file
@@ -87,6 +84,13 @@ $messages = file_get_contents($fn);
 flock($file, LOCK_UN);
 fclose($file);
 
+// Check if there are any messages
+if(trim($messages) == "")
+    $GLOBALS['warning'] = 'No messages found!';
+
+if(!empty_problem())
+    exit(exit_return());
+
 // Try to parse data
 $elements = array_filter(explode('<dt>', $messages));
 
@@ -102,12 +106,12 @@ foreach ($elements as $element){
     );
 
     if(!empty($image))
-        $message['user_image'] = $image[0];
+        $message['user_image'] = str_replace('"', '', $image[0]);
 
     if(count($user_and_message) < 2)
         $GLOBALS['error'] = 'File corrupted!';
 
-    if(!empty_error())
+    if(!empty_problem())
         exit(exit_return());
 
     array_shift($user_and_message);
@@ -124,10 +128,7 @@ foreach ($elements as $element){
     $GLOBALS['result']['messages'][] = $message;
 }
 
-if( empty($GLOBALS['result']['messages'])){
-    $GLOBALS['warning'] = 'No messages found!';
-    exit(exit_return());
-}
+$GLOBALS['result']['messages'] = array_reverse($GLOBALS['result']['messages']);
 
 // If everything went fine output the result
 echo exit_return();

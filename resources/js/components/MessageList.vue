@@ -1,22 +1,22 @@
 <template>
-        <div class="container has-text-centered">
-            <div v-if="this.loading_messages" class="notification">
-                Messages are loading!
-            </div>
-            <div v-if="messages.length === 0 && error === '' && !this.loading_messages" class="notification is-warning">
-                No messages found!
-            </div>
-            <div v-if="error !== ''" class="notification is-danger">
-                {{error}}
-            </div>
-            <message
-                    v-for="message in messages"
-                    v-bind:key="message.id"
-                    v-bind:user="message.user"
-                    v-bind:message="message.message"
-                    v-bind:image="message.hasOwnProperty('user_image') ? message.user_image : ''"
-            ></message>
+    <div class="container has-text-centered">
+        <div v-if="is_loading" class="notification">
+            Messages are loading!
         </div>
+        <div v-if="has_warning" class="notification is-warning">
+            {{warning}}
+        </div>
+        <div v-if="has_error" class="notification is-danger">
+            {{error}}
+        </div>
+        <message
+                v-for="message in messages"
+                v-bind:key="message.id"
+                v-bind:user="message.user"
+                v-bind:message="message.message"
+                v-bind:image="message.hasOwnProperty('user_image') ? message.user_image : ''"
+        ></message>
+    </div>
 </template>
 
 <script>
@@ -28,95 +28,84 @@
         data() {
             return {
                 loading_messages: true,
-                messages: [],
                 mod_time: null,
-                error: ""
+                messages: [],
+                error: "",
+                warning: ""
+            }
+        },
+
+        computed: {
+            has_error() {
+                return this.error !== "";
+            },
+            has_warning() {
+                return this.warning !== "";
+            },
+            is_loading() {
+                return (this.error === "" && this.warning === "" && this.loading_messages === true)
             }
         },
 
         timers: {
-            check_file: { time: 3000, autostart: true, repeat: true }
+            check_file: {time: 3000, autostart: true, repeat: true}
         },
 
         watch: {
-            mod_time (){
+            mod_time() {
                 this.debounced_get_message();
             }
         },
 
         methods: {
-            check_file () {
+            clear_problems(){
+                this.error = "";
+                this.warning = "";
+            },
+            has_problem() {
+                return (this.error !== "" || this.warning !== "")
+            },
+
+            check_file() {
                 let self = this;
 
                 axios.get(window.location.href + 'posts.php?t')
-                    .then(response => this.mod_time = self.validate_request(response, "check"));
+                    .then(response => self.mod_time = self.validate_request(response, "check"))
+                    .catch(error => self.error = error.reason
+                    );
             },
-            get_messages () {
-                if(this.error !== "File not found!")
+            get_messages() {
+                if(this.messages.length === 0)
                     this.loading_messages = true;
-
-                this.error = "";
 
                 let self = this;
 
                 axios.get(window.location.href + 'posts.php')
-                    .then(response => this.messages = self.validate_request(response, "message"));
+                    .then(response => self.messages = self.validate_request(response, "message"))
+                    .catch(error => self.error = error.reason);
             },
-            validate_request (response, type) {
-                let self = this;
+            validate_request(response, type) {
+                if (response.data.hasOwnProperty('error'))
+                    this.error = response.data.error;
+
+                if (response.data.hasOwnProperty('warning'))
+                    this.error = response.data.warning;
 
                 switch (type) {
                     case "check":
-                        if(!this.has_data(response))
+                        if(this.has_problem())
                             return null;
 
-                        if(this.has_error(response.data))
-                            return null;
-
-                        this.loading_messages = false;
-
-                        if(response.data.hasOwnProperty('mod_time'))
-                            return response.data.mod_time;
-
-                        this.error = "File mod date not available!";
-
-                        return null;
+                        return response.data.mod_time;
                     case "message":
-                        if(!this.has_data(response))
-                            return [];
-
-                        if(this.has_error(response.data))
-                            return [];
-
-                        response.data.forEach(function (element) {
-                            if(element.user === "" || element.message === "")
-                                self.error = "Data corrupted!";
-                        });
-
                         this.loading_messages = false;
+                        this.clear_problems();
 
-                        if(this.error !== '')
+                        if(this.has_problem())
                             return [];
 
-                        return response.data;
+                        return response.data.messages;
                 }
-            },
-            has_data(response){
-                if(!response.hasOwnProperty('data')){
-                    this.error = "Error in response!";
-                    return false;
-                }
-
-                return true;
-            },
-            has_error(data){
-                if(data.hasOwnProperty('error')){
-                    this.messages = [];
-                    this.error = data.error;
-                    return true;
-                }
-
-                return false;
             }
         },
 
