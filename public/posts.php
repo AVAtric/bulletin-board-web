@@ -13,14 +13,6 @@ $result['mod_time'] = null;
 $fn = '../bulletin_board_content.dat';
 
 // Some helper functions
-function _save_problem(){
-    if($GLOBALS['error'] != "")
-        $GLOBALS['result']['error'] = $GLOBALS['error'];
-
-    if($GLOBALS['warning'] != "")
-        $GLOBALS['result']['warning'] = $GLOBALS['warning'];
-}
-
 function _has_error(){
     if($GLOBALS['error'] != "")
         return true;
@@ -33,6 +25,14 @@ function _has_warning(){
         return true;
 
     return false;
+}
+
+function _save_problem(){
+    if(_has_error())
+        $GLOBALS['result']['error'] = $GLOBALS['error'];
+
+    if(_has_warning())
+        $GLOBALS['result']['warning'] = $GLOBALS['warning'];
 }
 
 function _has_problem(){

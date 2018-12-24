@@ -53,7 +53,7 @@
 
         watch: {
             mod_time() {
-                this.debounced_get_message();
+                this.get_messages();
             }
         },
 
@@ -61,6 +61,13 @@
             clear_problems(){
                 this.error = "";
                 this.warning = "";
+            },
+            save_problems(response){
+                if (response.data.hasOwnProperty('error'))
+                    this.error = response.data.error;
+
+                if (response.data.hasOwnProperty('warning'))
+                    this.warning = response.data.warning;
             },
             has_problem() {
                 return (this.error !== "" || this.warning !== "")
@@ -85,21 +92,26 @@
                     .catch(error => self.error = error.reason);
             },
             validate_request(response, type) {
-                if (response.data.hasOwnProperty('error'))
-                    this.error = response.data.error;
-
-                if (response.data.hasOwnProperty('warning'))
-                    this.error = response.data.warning;
-
                 switch (type) {
                     case "check":
+                        if(this.mod_time !== response.data.mod_time)
+                            this.clear_problems();
+
+                        this.save_problems(response);
+
                         if(this.has_problem())
-                            return null;
+                            if(this.mod_time !== null)
+                                return this.mod_time;
+                            else
+                                return null;
 
                         return response.data.mod_time;
                     case "message":
                         this.loading_messages = false;
+
                         this.clear_problems();
+
+                        this.save_problems(response);
 
                         if(this.has_problem())
                             return [];
@@ -111,7 +123,6 @@
 
         mounted() {
             this.check_file();
-            this.debounced_get_message = _.debounce(this.get_messages, 500);
         }
     }
 </script>

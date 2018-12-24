@@ -1,7 +1,6 @@
 /**
  * Base libraries
  */
+import axios from 'axios';
 
-
-window._ = require('lodash');
-window.axios = require('axios');
+window.axios = axios;
