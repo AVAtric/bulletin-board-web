@@ -1,6 +1,6 @@
 <template>
     <article class="media">
-        <figure v-if="image != ''" class="media-left">
+        <figure v-if="has_image" class="media-left">
             <p class="image is-64x64">
                 <img v-bind:src="image">
             </p>
@@ -19,6 +19,12 @@
 
 <script>
     export default {
-        props: ['user', 'message', 'image']
+        props: ['user', 'message', 'image'],
+
+        computed: {
+            has_image() {
+                return (this.$props.image !== "");
+            }
+        }
     }
 </script>
