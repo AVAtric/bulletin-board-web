@@ -94,6 +94,15 @@
             validate_request(response, type) {
                 switch (type) {
                     case "check":
+                        if(response.data.mod_time === null) {
+                            this.save_problems(response);
+
+                            if(this.has_problem()){
+                                this.messages = [];
+                                this.mod_time = null;
+                            }
+                        }
+
                         if(this.mod_time !== response.data.mod_time)
                             this.clear_problems();
 

@@ -118,7 +118,9 @@ foreach ($elements as $element){
 
     $user_and_message = explode('sagt:</strong>', $user_and_message[0]);
     $message['user'] = trim($user_and_message[0]);
-    $message['message'] = trim(str_replace(array('</dt>', '<dd>', '</dd>'), array('', '', ''), $user_and_message[1]));
+    $message['message'] = trim(
+            str_replace(array('</dt>', '<dd>', '</dd>'), array('', '', ''), $user_and_message[1])
+    );
 
     if (($message['user'] == "") || ($message['message'] == "")){
         $GLOBALS['error'] = 'File corrupted!';
