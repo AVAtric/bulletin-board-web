@@ -3,36 +3,26 @@
 header('Content-Type: application/json');
 
 // Init globals
-$GLOBALS['error'] = "";
-$GLOBALS['warning'] = "";
 $GLOBALS['result'] = array();
+$GLOBALS['result']['error'] = "";
+$GLOBALS['result']['warning'] = "";
 
 // Init variables
-$result= array();
-$result['mod_time'] = null;
 $fn = '../bulletin_board_content.dat';
 
 // Some helper functions
 function _has_error(){
-    if($GLOBALS['error'] != "")
+    if($GLOBALS['result']['error'] != "")
         return true;
 
     return false;
 }
 
 function _has_warning(){
-    if($GLOBALS['warning'] != "")
+    if($GLOBALS['result']['warning'] != "")
         return true;
 
     return false;
-}
-
-function _save_problem(){
-    if(_has_error())
-        $GLOBALS['result']['error'] = $GLOBALS['error'];
-
-    if(_has_warning())
-        $GLOBALS['result']['warning'] = $GLOBALS['warning'];
 }
 
 function _has_problem(){
@@ -44,7 +34,6 @@ function _has_problem(){
 
 function empty_problem(){
     if(_has_problem()){
-        _save_problem();
         return false;
     }
 
@@ -52,8 +41,11 @@ function empty_problem(){
 }
 
 function exit_return(){
-    if(_has_problem())
-        _save_problem();
+    if(!_has_error())
+        unset($GLOBALS['result']['error']);
+
+    if(!_has_warning())
+        unset($GLOBALS['result']['warning']);
 
     return json_encode($GLOBALS['result']);
 }
@@ -64,7 +56,7 @@ function exit_return(){
 
 // Check if file exists
 if(!file_exists($fn))
-    $GLOBALS['error'] = 'File not found!';
+    $GLOBALS['result']['error'] = 'File not found!';
 
 if(!empty_problem())
     exit(exit_return());
@@ -86,7 +78,7 @@ fclose($file);
 
 // Check if there are any messages
 if(trim($messages) == "")
-    $GLOBALS['warning'] = 'No messages found!';
+    $GLOBALS['result']['warning'] = 'No messages found!';
 
 if(!empty_problem())
     exit(exit_return());
@@ -109,7 +101,7 @@ foreach ($elements as $element){
         $message['user_image'] = str_replace('"', '', $image[0]);
 
     if(count($user_and_message) < 2)
-        $GLOBALS['error'] = 'File corrupted!';
+        $GLOBALS['result']['error'] = 'File corrupted!';
 
     if(!empty_problem())
         exit(exit_return());
@@ -123,7 +115,7 @@ foreach ($elements as $element){
     );
 
     if (($message['user'] == "") || ($message['message'] == "")){
-        $GLOBALS['error'] = 'File corrupted!';
+        $GLOBALS['result']['error'] = 'File corrupted!';
         exit(exit_return());
     }
 
