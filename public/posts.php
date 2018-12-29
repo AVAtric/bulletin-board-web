@@ -25,19 +25,11 @@ function _has_warning(){
     return false;
 }
 
-function _has_problem(){
+function has_problem(){
     if(_has_error() || _has_warning())
         return true;
 
     return false;
-}
-
-function empty_problem(){
-    if(_has_problem()){
-        return false;
-    }
-
-    return true;
 }
 
 function exit_return(){
@@ -58,7 +50,7 @@ function exit_return(){
 if(!file_exists($fn))
     $GLOBALS['result']['error'] = 'File not found!';
 
-if(!empty_problem())
+if(has_problem())
     exit(exit_return());
 
 // Save modification time of file
@@ -80,7 +72,7 @@ fclose($file);
 if(trim($messages) == "")
     $GLOBALS['result']['warning'] = 'No messages found!';
 
-if(!empty_problem())
+if(has_problem())
     exit(exit_return());
 
 // Try to parse data
@@ -103,7 +95,7 @@ foreach ($elements as $element){
     if(count($user_and_message) < 2)
         $GLOBALS['result']['error'] = 'File corrupted!';
 
-    if(!empty_problem())
+    if(has_problem())
         exit(exit_return());
 
     array_shift($user_and_message);
